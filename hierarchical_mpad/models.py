@@ -37,6 +37,7 @@ class MPAD(nn.Module):
                 self.atts2.append(Attention(n_hid, n_hid, False))
                 
         self.fc3 = nn.Linear(n_penultimate, n_class)
+        self.relu = nn.ReLU()
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x, adj, adj_s, shapes):
@@ -49,7 +50,7 @@ class MPAD(nn.Module):
             t = self.atts1[i](t)
             lst.append(t)
         x = torch.cat(lst, 1)
-        x = self.fc1(x)
+        x = self.relu(self.fc1(x))
         if self.graph_of_sentences == 'no':
             x = x.view(-1, shapes[1], x.size()[1])
             x = self.att(x)
@@ -61,7 +62,7 @@ class MPAD(nn.Module):
                 t = self.atts2[i](t)
                 lst.append(t)
             x = torch.cat(lst, 1)  
-        x = F.relu(self.fc2(x))
+        x = self.relu(self.fc2(x))
         x = self.dropout(x)
         x = self.fc3(x)
         return F.log_softmax(x, dim=1)

@@ -25,6 +25,7 @@ class MPAD(nn.Module):
             self.fc1 = nn.Linear(n_message_passing*n_hid, n_penultimate)
 
         self.fc2 = nn.Linear(n_penultimate, n_class)
+        self.relu = nn.ReLU()
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x, adj, n_graphs):
@@ -37,7 +38,7 @@ class MPAD(nn.Module):
             t = self.atts[i](t)
             lst.append(t)
         x = torch.cat(lst, 1) 
-        x = F.relu(self.fc1(x))
+        x = self.relu(self.fc1(x))
         x = self.dropout(x)
         x = self.fc2(x)
         return F.log_softmax(x, dim=1)

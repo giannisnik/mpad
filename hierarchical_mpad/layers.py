@@ -67,11 +67,8 @@ class Attention(Module):
         self.fc1 = nn.Linear(in_features, nhid)
         self.fc2 = nn.Linear(nhid, 1)
         self.fc3 = nn.Linear(nhid, nhid)
-        if self.master_node:
-            self.bn = nn.BatchNorm1d(2*nhid)
-        else:
-            self.bn = nn.BatchNorm1d(nhid)
         self.softmax = nn.Softmax(dim=1)
+        self.relu = nn.ReLU()
     
     def forward(self, x_in):
         x = torch.tanh(self.fc1(x_in))
@@ -84,9 +81,8 @@ class Attention(Module):
             t = t.repeat(1, 1, 1, x_in.size()[2])*x
             t = t.view(t.size()[0], t.size()[1], -1)
             t = t.sum(1)
-            t = F.relu(self.fc3(t))
-            t = torch.cat([t, x_in[:,-1,:].squeeze()], 1)
-            out = self.bn(t)
+            t = self.relu(self.fc3(t))
+            out = torch.cat([t, x_in[:,-1,:].squeeze()], 1)
         else:
             t = self.softmax(x)
             t = t.unsqueeze(3)
@@ -95,7 +91,6 @@ class Attention(Module):
             t = t.repeat(1, 1, 1, x_in.size()[2])*x
             t = t.view(t.size()[0], t.size()[1], -1)
             t = t.sum(1)
-            t = F.relu(self.fc3(t))
-            out = self.bn(t)
+            out = self.relu(self.fc3(t))
             
         return out

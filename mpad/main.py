@@ -26,7 +26,7 @@ parser.add_argument('--epochs', type=int, default=100,
                     help='Number of epochs to train.')
 parser.add_argument('--lr', type=float, default=0.001,
                     help='Initial learning rate.')
-parser.add_argument('--hidden', type=int, default=32,
+parser.add_argument('--hidden', type=int, default=64,
                     help='Number of hidden units.')
 parser.add_argument('--message-passing-layers', type=int, default=2,
                     help='Number of message passing layers.')
@@ -135,7 +135,7 @@ for train_index, test_index in kf.split(y):
         loss_test = F.cross_entropy(output, y)
         return output, loss_test
 
-    best_loss = 9999
+    best_acc = 0
 
     for epoch in range(args.epochs):
         scheduler.step()
@@ -167,8 +167,8 @@ for train_index, test_index in kf.split(y):
             "val_acc=", "{:.5f}".format(val_acc.avg), "time=", "{:.5f}".format(time.time() - start))
         
         # Remember best accuracy and save checkpoint
-        is_best = val_loss.avg <= best_loss
-        best_loss = min(val_loss.avg, best_loss)
+        is_best = val_acc.avg >= best_acc
+        best_acc = max(val_acc.avg, best_acc)
         if is_best:
             early_stopping_counter = 0
             torch.save({
