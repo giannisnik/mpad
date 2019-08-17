@@ -37,11 +37,11 @@ class MLP(nn.Module):
                 self.batch_norms.append(nn.BatchNorm1d((hidden_dim)))
 
         self.relu = nn.ReLU()
-
+        
     def forward(self, x):
         if self.linear_or_not:
             #If linear model
-            return self.linear(x)
+            return self.relu(self.linear(x))
         else:
             #If MLP
             h = x

@@ -14,18 +14,21 @@ class MPAD(nn.Module):
 
         self.mps1 = torch.nn.ModuleList()
         self.atts1 = torch.nn.ModuleList()
-        self.mps1.append(MessagePassing(n_feat, n_hid))
-        self.atts1.append(Attention(n_hid, n_hid, use_master_node))
-        for i in range(1, n_message_passing):
-            self.mps1.append(MessagePassing(n_hid, n_hid))
+        for i in range(n_message_passing):
+            if i == 0:
+                self.mps1.append(MessagePassing(n_feat, n_hid))
+            else:
+                self.mps1.append(MessagePassing(n_hid, n_hid))
             self.atts1.append(Attention(n_hid, n_hid, use_master_node))
 
         if use_master_node:
+            self.bn = nn.BatchNorm1d(2*n_message_passing*n_hid, n_hid)
             self.fc1 = nn.Linear(2*n_message_passing*n_hid, n_hid)
         else:
+            self.bn = nn.BatchNorm1d(n_message_passing*n_hid, n_hid)
             self.fc1 = nn.Linear(n_message_passing*n_hid, n_hid)
 
-        if graph_of_sentences == 'no':
+        if graph_of_sentences == 'sentence_att':
             self.att = Attention(n_hid, n_hid, False)
             self.fc2 = nn.Linear(n_hid, n_penultimate)
         else:
@@ -35,10 +38,10 @@ class MPAD(nn.Module):
             for i in range(n_message_passing):
                 self.mps2.append(MessagePassing(n_hid, n_hid))
                 self.atts2.append(Attention(n_hid, n_hid, False))
-                
+         
         self.fc3 = nn.Linear(n_penultimate, n_class)
-        self.relu = nn.ReLU()
         self.dropout = nn.Dropout(dropout)
+        self.relu = nn.ReLU()
 
     def forward(self, x, adj, adj_s, shapes):
         x = self.embedding(x)
@@ -50,8 +53,9 @@ class MPAD(nn.Module):
             t = self.atts1[i](t)
             lst.append(t)
         x = torch.cat(lst, 1)
+        x = self.bn(x)
         x = self.relu(self.fc1(x))
-        if self.graph_of_sentences == 'no':
+        if self.graph_of_sentences == 'sentence_att':
             x = x.view(-1, shapes[1], x.size()[1])
             x = self.att(x)
         else:

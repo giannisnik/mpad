@@ -36,8 +36,6 @@ class MLP(nn.Module):
             for layer in range(num_layers - 1):
                 self.batch_norms.append(nn.BatchNorm1d((hidden_dim)))
 
-        self.relu = nn.ReLU()
-
     def forward(self, x):
         if self.linear_or_not:
             #If linear model
@@ -46,5 +44,5 @@ class MLP(nn.Module):
             #If MLP
             h = x
             for layer in range(self.num_layers - 1):
-                h = self.relu(self.batch_norms[layer](self.linears[layer](h)))
+                h = F.relu(self.batch_norms[layer](self.linears[layer](h)))
             return self.linears[self.num_layers - 1](h)

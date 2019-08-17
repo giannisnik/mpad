@@ -16,18 +16,20 @@ from models import MPAD
 
 # Training settings
 parser = argparse.ArgumentParser()
-parser.add_argument('--path-to-dataset', default='datasets/rt-polarity.txt',
+parser.add_argument('--path-to-dataset', default='datasets/subjectivity.txt',
                     help='Path to the dataset.')
-parser.add_argument('--path-to-embeddings', default='.../GoogleNews-vectors-negative300.bin',
+parser.add_argument('--path-to-embeddings', default='../GoogleNews-vectors-negative300.bin',
                     help='Path to the to the word2vec binary file.')
 parser.add_argument('--no-cuda', action='store_true', default=False,
                     help='Disables CUDA training.')
-parser.add_argument('--epochs', type=int, default=100,
+parser.add_argument('--epochs', type=int, default=200,
                     help='Number of epochs to train.')
 parser.add_argument('--lr', type=float, default=0.001,
                     help='Initial learning rate.')
 parser.add_argument('--hidden', type=int, default=64,
                     help='Number of hidden units.')
+parser.add_argument('--penultimate', type=int, default=64,
+                    help='Size of penultimate layer.')
 parser.add_argument('--message-passing-layers', type=int, default=2,
                     help='Number of message passing layers.')
 parser.add_argument('--window-size', type=int, default=2,
@@ -42,8 +44,8 @@ parser.add_argument('--dropout', type=float, default=0.5,
                     help='Dropout rate (1 - keep probability).')
 parser.add_argument('--batch-size', type=int, default=128,
                     help='Batch size.')
-parser.add_argument('--graph-of-sentences', default='no',
-                    help='Graph of sentences (clique, path or no).')
+parser.add_argument('--graph-of-sentences', default='sentence_att',
+                    help='Graph of sentences (clique, path or sentence_att).')
 parser.add_argument('--patience', type=int, default=20,
                     help='Number of epochs to wait if no improvement during training.')
 
@@ -53,6 +55,18 @@ args.cuda = not args.no_cuda and torch.cuda.is_available()
 # Read data
 docs, class_labels = load_file(args.path_to_dataset)
 docs = preprocessing(docs)
+
+l1 = []
+l2 = []
+for doc in docs:
+    l1.append(len(doc))
+    for sentence in doc:
+        l2.append(len(sentence))
+
+print(np.mean(l1))
+print(np.mean(l2))
+print(np.max(l1))
+print(np.max(l2))
 
 enc = LabelEncoder()
 class_labels = enc.fit_transform(class_labels)
@@ -136,7 +150,7 @@ for train_index, test_index in kf.split(y):
     n_test_batches = ceil(n_test/args.batch_size)
 
     # Model and optimizer
-    model = MPAD(embeddings.shape[1], args.message_passing_layers, args.hidden, 64, nclass, args.dropout, embeddings, args.use_master_node, args.graph_of_sentences)
+    model = MPAD(embeddings.shape[1], args.message_passing_layers, args.hidden, args.penultimate, nclass, args.dropout, embeddings, args.use_master_node, args.graph_of_sentences)
 
     parameters = filter(lambda p: p.requires_grad, model.parameters())
     optimizer = optim.Adam(parameters, lr=args.lr)
@@ -185,7 +199,7 @@ for train_index, test_index in kf.split(y):
 
         # Train for one epoch
         for i in range(n_train_batches):
-            if args.graph_of_sentences == 'no':
+            if args.graph_of_sentences == 'sentence_att':
                 output, loss = train(epoch, adj_train[i], None, features_train[i], shapes_train[i], y_train[i])
             else:
                 output, loss = train(epoch, adj_train[i], adj_s_train[i], features_train[i], shapes_train[i], y_train[i])
@@ -199,7 +213,7 @@ for train_index, test_index in kf.split(y):
         val_acc = AverageMeter()
 
         for i in range(n_val_batches):
-            if args.graph_of_sentences == 'no':
+            if args.graph_of_sentences == 'sentence_att':
                 output, loss = test(adj_val[i], None, features_val[i], shapes_val[i], y_val[i])
             else:
                 output, loss = test(adj_val[i], adj_s_val[i], features_val[i], shapes_val[i], y_val[i])
@@ -241,7 +255,7 @@ for train_index, test_index in kf.split(y):
     optimizer.load_state_dict(checkpoint['optimizer'])
     
     for i in range(n_test_batches):
-        if args.graph_of_sentences == 'no':
+        if args.graph_of_sentences == 'sentence_att':
             output, loss = test(adj_test[i], None, features_test[i], shapes_test[i], y_test[i])
         else:
             output, loss = test(adj_test[i], adj_s_test[i], features_test[i], shapes_test[i], y_test[i])

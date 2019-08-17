@@ -13,18 +13,9 @@ class MessagePassing(Module):
     Simple Message Passing layer
     """
 
-    def __init__(self, in_features, out_features, bias=True):
-        super(MessagePassing, self).__init__()
-        self.in_features = in_features
-        self.out_features = out_features
-        
+    def __init__(self, in_features, out_features):
+        super(MessagePassing, self).__init__()        
         self.mlp = MLP(2, in_features, out_features, out_features)
-
-        self.weight = Parameter(torch.FloatTensor(in_features, out_features))
-        if bias:
-            self.bias = Parameter(torch.Tensor(out_features))
-        else:
-            self.register_parameter('bias', None)
         
         self.fc1_update = nn.Linear(out_features, out_features)
         self.fc2_update = nn.Linear(out_features, out_features)
@@ -32,20 +23,10 @@ class MessagePassing(Module):
         self.fc2_reset = nn.Linear(out_features, out_features)
         self.fc1 = nn.Linear(out_features, out_features)
         self.fc2 = nn.Linear(out_features, out_features)
-        self.init_weights()
-
-    def init_weights(self):
-        stdv = 1. / math.sqrt(self.weight.size(1))
-        self.weight.data.uniform_(-stdv, stdv)
-        if self.bias is not None:
-            self.bias.data.uniform_(-1, 1)
 
     def forward(self, x_in, adj):
-        x = self.mlp(x_in)
-        out = torch.spmm(adj, x)
-            
-        if self.bias is not None:
-            out += self.bias
+        x = torch.spmm(adj, x_in)
+        out = self.mlp(x)
 
         z = torch.sigmoid(self.fc1_update(out) + self.fc2_update(x))
         r = torch.sigmoid(self.fc1_reset(out) + self.fc2_reset(x))
@@ -65,7 +46,7 @@ class Attention(Module):
         self.nhid = nhid
         self.master_node = master_node
         self.fc1 = nn.Linear(in_features, nhid)
-        self.fc2 = nn.Linear(nhid, 1)
+        self.fc2 = nn.Linear(nhid, 1, bias=False)
         self.fc3 = nn.Linear(nhid, nhid)
         self.softmax = nn.Softmax(dim=1)
         self.relu = nn.ReLU()

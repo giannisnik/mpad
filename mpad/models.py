@@ -13,20 +13,23 @@ class MPAD(nn.Module):
 
         self.mps = torch.nn.ModuleList()
         self.atts = torch.nn.ModuleList()
-        self.mps.append(MessagePassing(n_feat, n_hid))
-        self.atts.append(Attention(n_hid, n_hid, use_master_node))
-        for i in range(1, n_message_passing):
-            self.mps.append(MessagePassing(n_hid, n_hid))
+        for i in range(n_message_passing):
+            if i == 0:
+                self.mps.append(MessagePassing(n_feat, n_hid))
+            else:
+                self.mps.append(MessagePassing(n_hid, n_hid))
             self.atts.append(Attention(n_hid, n_hid, use_master_node))
 
         if use_master_node:
+            self.bn = nn.BatchNorm1d(2*n_message_passing*n_hid)
             self.fc1 = nn.Linear(2*n_message_passing*n_hid, n_penultimate)
         else:
+            self.bn = nn.BatchNorm1d(n_message_passing*n_hid)
             self.fc1 = nn.Linear(n_message_passing*n_hid, n_penultimate)
 
         self.fc2 = nn.Linear(n_penultimate, n_class)
-        self.relu = nn.ReLU()
         self.dropout = nn.Dropout(dropout)
+        self.relu = nn.ReLU()
 
     def forward(self, x, adj, n_graphs):
         x = self.embedding(x)
@@ -37,7 +40,8 @@ class MPAD(nn.Module):
             t = x.view(n_graphs[0], -1, x.size()[1])
             t = self.atts[i](t)
             lst.append(t)
-        x = torch.cat(lst, 1) 
+        x = torch.cat(lst, 1)
+        x = self.bn(x)
         x = self.relu(self.fc1(x))
         x = self.dropout(x)
         x = self.fc2(x)

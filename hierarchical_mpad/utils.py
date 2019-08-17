@@ -48,12 +48,6 @@ def clean_str(string):
     string = re.sub(r"\)", " \) ", string) 
     string = re.sub(r"\?", " \? ", string) 
     string = re.sub(r"\s{2,}", " ", string)
-    return string.strip().split()
-
-
-def clean_str_sst(string):
-    string = re.sub(r"[^A-Za-z0-9(),!?\'\`]", " ", string)   
-    string = re.sub(r"\s{2,}", " ", string)    
     return string.strip().lower().split()
     
 
@@ -62,7 +56,7 @@ def preprocessing(docs):
     n_sentences = 0
 
     for doc in docs:
-        sentences = re.split(r"[!.?]", doc)
+        sentences = re.split(r"[!.?;]", doc)
         preprocessed_doc = list()
         for sentence in sentences:
             preprocessed_sentence = clean_str(sentence)
@@ -140,11 +134,12 @@ def create_gows(docs, vocab, window_size, directed, to_normalize, use_master_nod
             if len(edges) == 0:
                 A = sp.csr_matrix(([0],([0], [0])), shape=(1, 1))
                 X = np.zeros(1, dtype=np.int32)
-            
+
             if directed:
                 A = A.transpose()
-            if to_normalize and A.size > 1:
+            if to_normalize:
                 A = normalize(A)
+
             adj.append(A)
             features.append(X)
 
@@ -221,10 +216,10 @@ def generate_batches(adj, features, subgraphs, y, batch_size, use_master_node, g
             s = min(s, max_n_subgraphs)
             idx = (j-i)*max_n_subgraphs
             if graph_of_sentences == 'clique':
-                adj_s_batch[idx:idx+s, idx:idx+s] = np.ones((s,s))
+                adj_s_batch[idx:idx+s, idx:idx+s] = (1.0/s)*np.ones((s,s))
             elif graph_of_sentences == 'path':
                 adj_s_batch[idx:idx+s, idx:idx+s] = np.diag(np.ones(s-1), 1)
-            elif graph_of_sentences == 'no':
+            elif graph_of_sentences == 'sentence_att':
                 adj_s_batch = None
             for l, k in enumerate(subgraphs[index[j]]):
                 if l < s:
@@ -251,11 +246,11 @@ def generate_batches(adj, features, subgraphs, y, batch_size, use_master_node, g
             y_batch[j-i] = y[index[j]]
 
         adj_batch = adj_batch.tocsr()
-        if graph_of_sentences != 'no':
+        if graph_of_sentences != 'sentence_att':
             adj_s_batch = adj_s_batch.tocsr()
         
         adj_l.append(sparse_mx_to_torch_sparse_tensor(adj_batch))
-        if graph_of_sentences != 'no':
+        if graph_of_sentences != 'sentence_att':
             adj_s_l.append(sparse_mx_to_torch_sparse_tensor(adj_s_batch))
         
         features_l.append(torch.LongTensor(features_batch))
