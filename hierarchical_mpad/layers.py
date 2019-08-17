@@ -14,9 +14,10 @@ class MessagePassing(Module):
     """
 
     def __init__(self, in_features, out_features):
-        super(MessagePassing, self).__init__()        
-        self.mlp = MLP(2, in_features, out_features, out_features)
-        
+        super(MessagePassing, self).__init__()
+        self.mlp1 = MLP(2, in_features, out_features, out_features)
+        self.mlp2 = MLP(2, out_features, out_features, out_features)
+
         self.fc1_update = nn.Linear(out_features, out_features)
         self.fc2_update = nn.Linear(out_features, out_features)
         self.fc1_reset = nn.Linear(out_features, out_features)
@@ -25,8 +26,10 @@ class MessagePassing(Module):
         self.fc2 = nn.Linear(out_features, out_features)
 
     def forward(self, x_in, adj):
-        x = torch.spmm(adj, x_in)
-        out = self.mlp(x)
+        x = self.mlp1(x_in)
+        out = torch.spmm(adj, x)
+        out = self.mlp2(out)
+
 
         z = torch.sigmoid(self.fc1_update(out) + self.fc2_update(x))
         r = torch.sigmoid(self.fc1_reset(out) + self.fc2_reset(x))
