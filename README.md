@@ -26,7 +26,7 @@ For the hierarchical models, run:
 python hierarchical_mpad/main.py --path-to-embeddings path --graph-of-sentences type
 ```
 
-where type can take the values 'clique', 'path' or 'no', and each value corresponds to one of the three hierarchical models described in the paper. 
+where type can take the values 'clique', 'path' or 'sentence_att', and each value corresponds to one of the three hierarchical models described in the paper. 
 
 ### Cite
 Please cite our paper if you use this code:
