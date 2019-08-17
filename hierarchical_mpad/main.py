@@ -56,18 +56,6 @@ args.cuda = not args.no_cuda and torch.cuda.is_available()
 docs, class_labels = load_file(args.path_to_dataset)
 docs = preprocessing(docs)
 
-l1 = []
-l2 = []
-for doc in docs:
-    l1.append(len(doc))
-    for sentence in doc:
-        l2.append(len(sentence))
-
-print(np.mean(l1))
-print(np.mean(l2))
-print(np.max(l1))
-print(np.max(l2))
-
 enc = LabelEncoder()
 class_labels = enc.fit_transform(class_labels)
 
