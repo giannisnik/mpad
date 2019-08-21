@@ -1,5 +1,5 @@
 ## Message Passing Attention Networks for Document Understanding 
-Code for the paper [Message Passing Attention Networks for Document Understanding ]().
+Code for the paper [Message Passing Attention Networks for Document Understanding](https://arxiv.org/pdf/1908.06267.pdf).
 
 ### Requirements
 Code is written in Python 3.6 and requires:
@@ -31,12 +31,11 @@ where type can take the values 'clique', 'path' or 'sentence_att', and each valu
 ### Cite
 Please cite our paper if you use this code:
 ```
-@inproceedings{nikolentzos2019message,
+@article{nikolentzos2019message,
   title={Message Passing Attention Networks for Document Understanding},
   author={Nikolentzos, Giannis and Tixier, Antoine Jean-Pierre and Vazirgiannis, Michalis},
-  booktitle={},
-  pages={},
-  year={}
+  journal={arXiv preprint arXiv:1908.06267},
+  year={2019}
 }
 ```
 
