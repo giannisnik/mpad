@@ -31,11 +31,11 @@ where type can take the values 'clique', 'path' or 'sentence_att', and each valu
 ### Cite
 Please cite our paper if you use this code:
 ```
-@article{nikolentzos2019message,
+@inproceedings{nikolentzos2020message,
   title={Message Passing Attention Networks for Document Understanding},
   author={Nikolentzos, Giannis and Tixier, Antoine Jean-Pierre and Vazirgiannis, Michalis},
-  journal={arXiv preprint arXiv:1908.06267},
-  year={2019}
+  booktitle={Proceedings of the 34th AAAI Conference on Artificial Intelligence},
+  year={2020}
 }
 ```
 
