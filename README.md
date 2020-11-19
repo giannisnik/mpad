@@ -1,5 +1,5 @@
 ## Message Passing Attention Networks for Document Understanding 
-Code for the paper [Message Passing Attention Networks for Document Understanding](https://arxiv.org/pdf/1908.06267.pdf).
+Code for the paper [Message Passing Attention Networks for Document Understanding](https://ojs.aaai.org/index.php/AAAI/article/view/6376/6232).
 
 ### Requirements
 Code is written in Python 3.6 and requires:
@@ -35,6 +35,7 @@ Please cite our paper if you use this code:
   title={Message Passing Attention Networks for Document Understanding},
   author={Nikolentzos, Giannis and Tixier, Antoine Jean-Pierre and Vazirgiannis, Michalis},
   booktitle={Proceedings of the 34th AAAI Conference on Artificial Intelligence},
+  pages={8544--8551},
   year={2020}
 }
 ```
