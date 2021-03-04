@@ -4,6 +4,8 @@ import torch
 def get_args():
     # Training settings
     parser = argparse.ArgumentParser()
+    parser.add_argument('--experiment-name', default='datasets/subjectivity.txt',
+                        help='Path to the dataset.')
     parser.add_argument('--path-to-dataset', default='datasets/subjectivity.txt',
                         help='Path to the dataset.')
     parser.add_argument('--path-to-embeddings', default='GoogleNews-vectors-negative300.bin',
@@ -33,6 +35,8 @@ def get_args():
     parser.add_argument('--batch-size', type=int, default=128,
                         help='Batch size.')
     parser.add_argument('--patience', type=int, default=20,
+                        help='Number of epochs to wait if no improvement during training.')
+    parser.add_argument('--eval-every', default='epoch',
                         help='Number of epochs to wait if no improvement during training.')
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()

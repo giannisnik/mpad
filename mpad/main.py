@@ -58,7 +58,8 @@ if __name__ == "__main__":
     ######################################
 
     learner = Learner(
-
+        experiment_name=args.experiment_name,
+        device=device
     )
     learner.init_model(
         'mpad',

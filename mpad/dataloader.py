@@ -22,21 +22,34 @@ from collections import defaultdict
 def doc2graph(doc, word2idx, window_size, directed, to_normalize, use_master_node):
 
 	# First construct the nodes that live inside the document
-	master_node_idx = len(word2idx)
-	nodes = list(set([word2idx[w] for w in doc])) #todo: how to handle OOV words
+
+	nodes = list(set(doc))#todo: how to handle OOV words
+	# Give each word/node a unique id for bookkeeping of edges
+	node2idx = {node:ix for ix,node in enumerate(nodes)}
+	node_features = [word2idx[node] for node in nodes]
 
 	if use_master_node:
+		master_node_idx = len(node2idx)
 		nodes.append(master_node_idx)
+		node2idx['master_node'] = master_node_idx
 
-	nodes = np.array(nodes, dtype=np.int32)
+	node_features = np.array(node_features, dtype=np.int32)
+
+	# idx = dict()
+	# l_terms = list()
+	# for i in range(len(doc)):
+	# 	if doc[i] not in idx:
+	# 		l_terms.append(doc[i])
+	# 		idx[doc[i]] = len(idx)
+
 
 	# Then construct the edges by taking a sliding window over the document
 	edges = {}
 	for i, w in enumerate(doc):
-		src_ix = word2idx[w]
+		src_ix = node2idx[w]
 		for j in range(i + 1, i + window_size):  # TODO: check if window size is applied correctly
 			if j < len(doc):
-				tgt_ix = word2idx[doc[j]]
+				tgt_ix = node2idx[doc[j]]
 				if (src_ix, tgt_ix) in edges:
 					edges[(src_ix, tgt_ix)] += 1.0 / (j - i)
 					if not directed:
@@ -57,10 +70,10 @@ def doc2graph(doc, word2idx, window_size, directed, to_normalize, use_master_nod
 		edge_s.append(edge[0])
 		edge_t.append(edge[1])
 		val.append(edges[edge])
-	A = sp.csr_matrix((val, (edge_s, edge_t)), shape=(len(nodes), len(nodes)))
+	A = sp.csr_matrix((val, (edge_s, edge_t)), shape=(len(node2idx), len(node2idx)))
 	if len(edges) == 0:
 		A = sp.csr_matrix(([0], ([0], [0])), shape=(1, 1))
-		nodes = np.zeros(1, dtype=np.int32)
+		node_features = np.zeros(1, dtype=np.int32)
 
 	if directed:
 		A = A.transpose()
@@ -69,9 +82,9 @@ def doc2graph(doc, word2idx, window_size, directed, to_normalize, use_master_nod
 
 	# Convert to torch tensors
 	A = sparse_mx_to_torch_sparse_tensor(A)
-	nodes = torch.LongTensor(nodes)
+	node_features = torch.LongTensor(node_features)
 
-	return A, nodes
+	return A, node_features
 
 
 def create_gows(docs, vocab, window_size, directed, to_normalize, use_master_node):
@@ -229,7 +242,24 @@ def generate_batches(adj, features, y, batch_size, use_master_node, shuffle=Fals
 
 
 def collate_fn(batch):
-	pass
+	"""
+	Default collate fn does not support batching differently sized sparse matrices
+	"""
+	batch_A, batch_nodes, batch_y = zip(*batch)
+
+
+	n_graphs = len(batch_nodes)
+	max_n_nodes = max([nodes.shape[0] for nodes in batch_nodes])
+
+	n_nodes = n_graphs * max_n_nodes
+
+	adj_batch = lil_matrix((n_nodes, n_nodes))
+	features_batch = np.zeros(n_nodes)
+	y_batch = np.zeros(n_graphs)
+
+	return batch_A, batch_nodes, batch_y
+
+
 
 class DocumentGraphDataset(Dataset):
 	def __init__(self, docs, labels, word2idx, window_size, use_master_node, normalize_edges, use_directed_edges):
@@ -239,7 +269,7 @@ class DocumentGraphDataset(Dataset):
 		Constructs a graph of words of each document based
 		"""
 
-		self.labels = labels
+		self.labels = torch.LongTensor(labels)
 		self.graphs = [doc2graph(
 		 doc,
 		 word2idx=word2idx,
@@ -258,12 +288,12 @@ class DocumentGraphDataset(Dataset):
 			idx = idx.tolist()
 
 		graphs = self.graphs[idx]
-		A, nodes = zip(*graphs)
+		A, nodes = graphs
 		y = self.labels[idx]
 
 		return (A, nodes, y)
 
-	def to_dataloader(self, batch_size, shuffle, drop_last, collate_fn=None):
+	def to_dataloader(self, batch_size, shuffle, drop_last, collate_fn=collate_fn):
 
 		return DataLoader(
 			self,
