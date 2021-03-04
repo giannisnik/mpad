@@ -6,7 +6,7 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--path-to-dataset', default='datasets/subjectivity.txt',
                         help='Path to the dataset.')
-    parser.add_argument('--path-to-embeddings', default='../GoogleNews-vectors-negative300.bin',
+    parser.add_argument('--path-to-embeddings', default='GoogleNews-vectors-negative300.bin',
                         help='Path to the to the word2vec binary file.')
     parser.add_argument('--no-cuda', action='store_true', default=False,
                         help='Disables CUDA training.')
@@ -36,5 +36,7 @@ def get_args():
                         help='Number of epochs to wait if no improvement during training.')
     args = parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
+
+    device = 'cuda' if args.cuda else 'cpu'
 
     return args, device

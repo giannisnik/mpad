@@ -34,7 +34,7 @@ if __name__ == "__main__":
     # Split into train/val
 
     # Load embeddings
-    embeddings = corpus_prepper.load_embeddings(args.path_to_embedding, word2idx, embedding_type='word2vec')
+    embeddings = corpus_prepper.load_embeddings(args.path_to_embeddings, word2idx, embedding_type='word2vec')
 
     # Instantiate dataloader
     dataset_train = DocumentGraphDataset(

@@ -35,8 +35,8 @@ def doc2graph(doc, word2idx, window_size, directed, to_normalize, use_master_nod
 	for i, w in enumerate(doc):
 		src_ix = word2idx[w]
 		for j in range(i + 1, i + window_size):  # TODO: check if window size is applied correctly
-			tgt_ix = word2idx[doc[j]]
 			if j < len(doc):
+				tgt_ix = word2idx[doc[j]]
 				if (src_ix, tgt_ix) in edges:
 					edges[(src_ix, tgt_ix)] += 1.0 / (j - i)
 					if not directed:
@@ -46,8 +46,8 @@ def doc2graph(doc, word2idx, window_size, directed, to_normalize, use_master_nod
 					if not directed:
 						edges[(tgt_ix, src_ix)] = 1.0 / (j - i)
 		if use_master_node:
-			edges[(src_ix, "master_node")] = 1.0
-			edges[("master_node", src_ix)] = 1.0
+			edges[(src_ix, master_node_idx)] = 1.0
+			edges[(master_node_idx, src_ix)] = 1.0
 
 	# Construct a sparse matrix from the edges
 	edge_s = list()
@@ -55,7 +55,7 @@ def doc2graph(doc, word2idx, window_size, directed, to_normalize, use_master_nod
 	val = list()
 	for edge in edges:
 		edge_s.append(edge[0])
-		edge_t.append([edge[1]])
+		edge_t.append(edge[1])
 		val.append(edges[edge])
 	A = sp.csr_matrix((val, (edge_s, edge_t)), shape=(len(nodes), len(nodes)))
 	if len(edges) == 0:

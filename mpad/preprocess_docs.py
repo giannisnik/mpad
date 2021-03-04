@@ -74,7 +74,7 @@ class CorpusPreProcessor():
 
         self.docs = []
         self.labels = []
-        self.word2idx = OrderedDict
+        self.word2idx = OrderedDict()
         self.min_freq_word = min_freq_word
         self.multi_label = multi_label
 
@@ -101,7 +101,7 @@ class CorpusPreProcessor():
 
     def process_labels(self, labels):
         # First only implement for multi-class classification
-        if self.multi_label:
+        if not self.multi_label:
             y, n_labels = encode_multi_class_labels(labels)
         else:
             raise NotImplementedError()
