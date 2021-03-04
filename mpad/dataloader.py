@@ -81,7 +81,7 @@ def doc2graph(doc, word2idx, window_size, directed, to_normalize, use_master_nod
 		A = normalize(A)
 
 	# Convert to torch tensors
-	A = sparse_mx_to_torch_sparse_tensor(A)
+	# A = sparse_mx_to_torch_sparse_tensor(A)
 	node_features = torch.LongTensor(node_features)
 
 	return A, node_features
@@ -241,7 +241,7 @@ def generate_batches(adj, features, y, batch_size, use_master_node, shuffle=Fals
 	return adj_l, features_l, batch_n_graphs_l, y_l
 
 
-def collate_fn(batch):
+def collate_fn_no_master_node(batch):
 	"""
 	Default collate fn does not support batching differently sized sparse matrices
 	"""
@@ -254,11 +254,51 @@ def collate_fn(batch):
 	n_nodes = n_graphs * max_n_nodes
 
 	adj_batch = lil_matrix((n_nodes, n_nodes))
-	features_batch = np.zeros(n_nodes)
-	y_batch = np.zeros(n_graphs)
+	for i, A in enumerate(batch_A):
+		start_ix = i*max_n_nodes
+		adj_batch[start_ix:start_ix+A.shape[0], start_ix:start_ix+A.shape[0]] = A
+
+	adj_batch = adj_batch.tocsr()
+	batch_A = adj_batch
+	batch_A = sparse_mx_to_torch_sparse_tensor(batch_A)
+
+	# concatenate all features and labels to one long vector
+	batch_nodes = torch.cat(batch_nodes, dim=0)
+	batch_y = torch.cat(batch_y)
 
 	return batch_A, batch_nodes, batch_y
 
+
+def collate_fn_w_master_node(batch):
+	"""
+	Default collate fn does not support batching differently sized sparse matrices
+	"""
+	batch_A, batch_nodes, batch_y = zip(*batch)
+
+	n_graphs = len(batch_nodes)
+	max_n_nodes = max([nodes.shape[0] for nodes in batch_nodes])
+
+	n_nodes = n_graphs * max_n_nodes
+
+	adj_batch = lil_matrix((n_nodes, n_nodes))
+	for i, A in enumerate(batch_A):
+		start_ix = i * max_n_nodes
+		# Word-word edges
+		adj_batch[start_ix:start_ix + A.shape[0]-1, start_ix:start_ix + A.shape[0]-1] = A[:-1,:-1]
+		# Edges to the master node
+		adj_batch[start_ix:start_ix + A.shape[0] - 1, start_ix:start_ix + max_n_nodes - 1] = A[:-1, -1]
+		# Edges from the master node
+		adj_batch[start_ix+max_n_nodes-1, start_ix:start_ix + A.shape[0]-1] = A[-1, :-1]
+
+	adj_batch = adj_batch.tocsr()
+	batch_A = adj_batch
+	batch_A = sparse_mx_to_torch_sparse_tensor(batch_A)
+
+	# concatenate all features and labels to 1 long vector
+	batch_nodes = torch.cat(batch_nodes, dim=0)
+	batch_y = torch.cat(batch_y)
+
+	return batch_A, batch_nodes, batch_y
 
 
 class DocumentGraphDataset(Dataset):
@@ -268,7 +308,7 @@ class DocumentGraphDataset(Dataset):
 		Dataset inheriting from PyTorch's Dataset class.
 		Constructs a graph of words of each document based
 		"""
-
+		self.use_master_node = use_master_node
 		self.labels = torch.LongTensor(labels)
 		self.graphs = [doc2graph(
 		 doc,
@@ -293,8 +333,9 @@ class DocumentGraphDataset(Dataset):
 
 		return (A, nodes, y)
 
-	def to_dataloader(self, batch_size, shuffle, drop_last, collate_fn=collate_fn):
+	def to_dataloader(self, batch_size, shuffle, drop_last):
 
+		collate_fn = collate_fn_w_master_node if self.use_master_node else collate_fn_no_master_node
 		return DataLoader(
 			self,
 			batch_size=batch_size,

@@ -29,7 +29,7 @@ class Learner:
 		self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=50, gamma=0.5)
 
 
-	def train_epoch(self, dataloader, eval_every):
+	def train_epoch(self, dataloader, eval_every, batch_size):
 
 		self.model.train()
 		total_iters = -1
@@ -41,7 +41,7 @@ class Learner:
 				batch = (t.to(self.device) for t in batch)
 				A, nodes, y = batch
 
-				preds = self.model(nodes, A)
+				preds = self.model(nodes, A, batch_size)
 
 				loss = self.criterion(preds, y)
 

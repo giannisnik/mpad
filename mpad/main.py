@@ -81,7 +81,8 @@ if __name__ == "__main__":
 
         learner.train_epoch(
             dataloader_train,
-            eval_every=eval_every
+            eval_every=eval_every,
+            batch_size=args.batch_size
         )
 
         learner.evaluate(
