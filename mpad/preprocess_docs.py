@@ -4,6 +4,7 @@ import numpy as np
 from gensim.models.keyedvectors import KeyedVectors
 from collections import Counter, OrderedDict
 from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
 
 
 def load_word2vec(fname, word2idx):
@@ -67,6 +68,13 @@ def encode_multi_class_labels(labels):
 
     return y, nclass
 
+def multi_class_train_test_split(X, y, test_size):
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size = test_size, random_state = 42)
+
+    return X_train, X_test, y_train, y_test
+
 
 
 class CorpusPreProcessor():
@@ -98,6 +106,14 @@ class CorpusPreProcessor():
         labels, n_labels = self.process_labels(labels)
 
         return docs, labels, n_labels, self.word2idx
+
+    def split_corpus(self, docs, labels, test_size):
+
+        if not self.multi_label:
+            # Multi-class train/test split
+            return multi_class_train_test_split(docs, labels, test_size=test_size)
+        else:
+            raise NotImplementedError()
 
     def process_labels(self, labels):
         # First only implement for multi-class classification

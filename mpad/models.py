@@ -37,7 +37,7 @@ class MPAD(nn.Module):
         lst = list()
         for i in range(self.n_message_passing):
             x = self.mps[i](x, adj)
-            t = x.view(n_graphs, -1, x.size()[1])
+            t = x.view(n_graphs[0], -1, x.size()[1])
             t = self.atts[i](t)
             lst.append(t)
         x = torch.cat(lst, 1)

@@ -247,7 +247,6 @@ def collate_fn_no_master_node(batch):
 	"""
 	batch_A, batch_nodes, batch_y = zip(*batch)
 
-
 	n_graphs = len(batch_nodes)
 	max_n_nodes = max([nodes.shape[0] for nodes in batch_nodes])
 
@@ -268,7 +267,7 @@ def collate_fn_no_master_node(batch):
 	batch_nodes = torch.cat(batch_nodes, dim=0)
 	batch_y = torch.cat(batch_y)
 
-	return batch_A, batch_nodes, batch_y
+	return batch_A, batch_nodes, batch_y, torch.LongTensor([n_graphs])
 
 
 def collate_fn_w_master_node(batch):
@@ -301,11 +300,10 @@ def collate_fn_w_master_node(batch):
 	batch_A = sparse_mx_to_torch_sparse_tensor(batch_A)
 
 	# concatenate all features and labels to 1 long vector
-	# batch_nodes = torch.cat(batch_nodes, dim=0)
 	batch_features = torch.LongTensor(batch_features)
 	batch_y = torch.cat(batch_y)
 
-	return batch_A, batch_features, batch_y
+	return batch_A, batch_features, batch_y, torch.LongTensor([n_graphs])
 
 
 class DocumentGraphDataset(Dataset):

@@ -6,6 +6,8 @@ def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--experiment-name', default='datasets/subjectivity.txt',
                         help='Path to the dataset.')
+    parser.add_argument('--model-type', default='MPAD',
+                        help='Path to the dataset.')
     parser.add_argument('--path-to-dataset', default='datasets/subjectivity.txt',
                         help='Path to the dataset.')
     parser.add_argument('--path-to-embeddings', default='GoogleNews-vectors-negative300.bin',
@@ -15,6 +17,8 @@ def get_args():
     parser.add_argument('--epochs', type=int, default=200,
                         help='Number of epochs to train.')
     parser.add_argument('--lr', type=float, default=0.001,
+                        help='Initial learning rate.')
+    parser.add_argument('--percentage_dev', type=float, default=0.1,
                         help='Initial learning rate.')
     parser.add_argument('--hidden', type=int, default=64,
                         help='Number of hidden units.')
