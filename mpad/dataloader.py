@@ -82,7 +82,7 @@ def doc2graph(doc, word2idx, window_size, directed, to_normalize, use_master_nod
 
 	# Convert to torch tensors
 	# A = sparse_mx_to_torch_sparse_tensor(A)
-	node_features = torch.LongTensor(node_features)
+	# node_features = torch.LongTensor(node_features)
 
 	return A, node_features
 
@@ -254,9 +254,11 @@ def collate_fn_no_master_node(batch):
 	n_nodes = n_graphs * max_n_nodes
 
 	adj_batch = lil_matrix((n_nodes, n_nodes))
-	for i, A in enumerate(batch_A):
+	batch_features = np.zeros(n_nodes)
+	for i, (A, features) in enumerate(zip(batch_A, batch_nodes)):
 		start_ix = i*max_n_nodes
 		adj_batch[start_ix:start_ix+A.shape[0], start_ix:start_ix+A.shape[0]] = A
+		batch_features[start_ix:start_ix+features.shape[0]] = features
 
 	adj_batch = adj_batch.tocsr()
 	batch_A = adj_batch
@@ -281,7 +283,8 @@ def collate_fn_w_master_node(batch):
 	n_nodes = n_graphs * max_n_nodes
 
 	adj_batch = lil_matrix((n_nodes, n_nodes))
-	for i, A in enumerate(batch_A):
+	batch_features = np.zeros(n_nodes)
+	for i, (A, features) in enumerate(zip(batch_A, batch_nodes)):
 		start_ix = i * max_n_nodes
 		# Word-word edges
 		adj_batch[start_ix:start_ix + A.shape[0]-1, start_ix:start_ix + A.shape[0]-1] = A[:-1,:-1]
@@ -290,15 +293,19 @@ def collate_fn_w_master_node(batch):
 		# Edges from the master node
 		adj_batch[start_ix+max_n_nodes-1, start_ix:start_ix + A.shape[0]-1] = A[-1, :-1]
 
+		# Set features in padded manner
+		batch_features[start_ix:start_ix + features.shape[0]] = features
+
 	adj_batch = adj_batch.tocsr()
 	batch_A = adj_batch
 	batch_A = sparse_mx_to_torch_sparse_tensor(batch_A)
 
 	# concatenate all features and labels to 1 long vector
-	batch_nodes = torch.cat(batch_nodes, dim=0)
+	# batch_nodes = torch.cat(batch_nodes, dim=0)
+	batch_features = torch.LongTensor(batch_features)
 	batch_y = torch.cat(batch_y)
 
-	return batch_A, batch_nodes, batch_y
+	return batch_A, batch_features, batch_y
 
 
 class DocumentGraphDataset(Dataset):

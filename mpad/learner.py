@@ -28,6 +28,8 @@ class Learner:
 		self.optimizer = optim.Adam(self.model.parameters(), lr=lr)
 		self.scheduler = optim.lr_scheduler.StepLR(self.optimizer, step_size=50, gamma=0.5)
 
+		self.criterion = torch.nn.CrossEntropyLoss()
+
 
 	def train_epoch(self, dataloader, eval_every, batch_size):
 
