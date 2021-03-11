@@ -1,12 +1,10 @@
-import math
 import torch
-
 import torch.nn as nn
-from torch.nn.parameter import Parameter
 from torch.nn.modules.module import Module
-import torch.nn.functional as F
+
 
 from mlp import MLP
+
 
 class MessagePassing(Module):
     """
@@ -30,11 +28,10 @@ class MessagePassing(Module):
         out = torch.spmm(adj, x)
         out = self.mlp2(out)
 
-
         z = torch.sigmoid(self.fc1_update(out) + self.fc2_update(x))
         r = torch.sigmoid(self.fc1_reset(out) + self.fc2_reset(x))
-        out = torch.tanh(self.fc1(out) + self.fc2(r*x))
-        out = (1-z)*x + z*out
+        out = torch.tanh(self.fc1(out) + self.fc2(r * x))
+        out = (1 - z) * x + z * out
         return out
 
 
@@ -53,28 +50,35 @@ class Attention(Module):
         self.fc3 = nn.Linear(nhid, nhid)
         self.softmax = nn.Softmax(dim=1)
         self.relu = nn.ReLU()
-    
+
     def forward(self, x_in):
+        # Transform input representations to key space
         x = torch.tanh(self.fc1(x_in))
         x = torch.tanh(self.fc2(x))
         if self.master_node:
-            t = self.softmax(x[:,:-1,:])
+            # Weight all keys by applying softmax
+            t = self.softmax(x[:, :-1, :])
             t = t.unsqueeze(3)
-            x = x_in[:,:-1,:].repeat(1, 1, 1)
-            x = x.view(x.size()[0],x.size()[1], 1, self.nhid)
-            t = t.repeat(1, 1, 1, x_in.size()[2])*x
+            # Take weighted average according to softmax-normalized weights
+            x = x_in[:, :-1, :].repeat(1, 1, 1)
+            x = x.view(x.size()[0], x.size()[1], 1, self.nhid)
+            t = t.repeat(1, 1, 1, x_in.size()[2]) * x
             t = t.view(t.size()[0], t.size()[1], -1)
             t = t.sum(1)
+            # Final linear + non-linear transformation
             t = self.relu(self.fc3(t))
-            out = torch.cat([t, x_in[:,-1,:].squeeze()], 1)
+            # Concatenate master-node representation to graph representation as means of skip-connection
+            out = torch.cat([t, x_in[:, -1, :].squeeze()], 1)
         else:
+            # Weight all keys by applying softmax
             t = self.softmax(x)
             t = t.unsqueeze(3)
+            # Take weighted average according to softmax-normalized weights
             x = x_in.repeat(1, 1, 1)
-            x = x.view(x.size()[0],x.size()[1], 1, self.nhid)
-            t = t.repeat(1, 1, 1, x_in.size()[2])*x
+            x = x.view(x.size()[0], x.size()[1], 1, self.nhid)
+            t = t.repeat(1, 1, 1, x_in.size()[2]) * x
             t = t.view(t.size()[0], t.size()[1], -1)
             t = t.sum(1)
             out = self.relu(self.fc3(t))
-            
+
         return out
